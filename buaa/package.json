@@ -1,0 +1,13 @@
+{
+  "name": "buaa-admission-scores",
+  "version": "1.0.0",
+  "description": "Scraper for Beijing University of Aeronautics and Astronautics admission scores",
+  "main": "browser_scraper.js",
+  "scripts": {
+    "test": "node browser_scraper.js",
+    "start": "node production_scraper.js"
+  },
+  "dependencies": {
+    "puppeteer": "^22.0.0"
+  }
+}

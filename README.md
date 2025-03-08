@@ -3,6 +3,8 @@
 这是一个用于爬取中国高校高考录取数据的项目。目前支持以下学校：
 
 - 北京交通大学 (BJTU)
+- 北京邮电大学 (BUPT)
+- 北京航空航天大学 (BUAA)
 
 ## 项目结构
 
@@ -18,6 +20,22 @@ gaokao-score/
 │       ├── bjtu_admission_scores.json.pretty    # 格式化的全部数据
 │       ├── bjtu_admission_scores.json.[省份]    # 省份数据
 │       └── bjtu_admission_scores.json.[省份].pretty # 格式化的省份数据
+├── bupt/                 # 北京邮电大学爬虫
+│   ├── browser_scraper.js    # 爬虫程序
+│   ├── production_scraper.js # 生产版爬虫
+│   ├── package.json          # 项目依赖
+│   ├── README.md             # 北京邮电大学爬虫说明
+│   └── output/               # 爬取数据输出
+│       ├── bupt_admission_scores.json           # 全部数据
+│       └── bupt_admission_scores.json.[省份]    # 省份数据
+├── buaa/                 # 北京航空航天大学爬虫
+│   ├── browser_scraper.js    # 爬虫程序
+│   ├── production_scraper.js # 生产版爬虫
+│   ├── package.json          # 项目依赖
+│   ├── README.md             # 北京航空航天大学爬虫说明
+│   └── output/               # 爬取数据输出
+│       ├── buaa_admission_scores.json           # 全部数据
+│       └── buaa_admission_scores.json.[省份]    # 省份数据
 ```
 
 ## 数据格式

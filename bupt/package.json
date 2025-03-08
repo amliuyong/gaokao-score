@@ -1,0 +1,14 @@
+{
+  "name": "bupt-admission-scores-scraper",
+  "version": "1.0.0",
+  "description": "Scraper for BUPT admission scores data",
+  "main": "extract_bupt_scores.js",
+  "scripts": {
+    "start": "node extract_bupt_scores.js"
+  },
+  "dependencies": {
+    "axios": "^1.8.2",
+    "cheerio": "^1.0.0",
+    "puppeteer": "^21.11.0"
+  }
+}
