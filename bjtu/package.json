@@ -1,0 +1,23 @@
+{
+  "name": "bjtu-admission-scores-scraper",
+  "version": "1.0.0",
+  "description": "A scraper for Beijing Jiaotong University admission scores data",
+  "main": "production_scraper.js",
+  "scripts": {
+    "test": "node browser_scraper.js",
+    "start": "node production_scraper.js"
+  },
+  "keywords": [
+    "scraper",
+    "puppeteer",
+    "education",
+    "admission",
+    "scores",
+    "bjtu"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}
