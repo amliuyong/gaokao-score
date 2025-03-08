@@ -1,0 +1,22 @@
+{
+  "name": "xidian-gaokao-scraper",
+  "version": "1.0.0",
+  "description": "西安电子科技大学高考分数爬虫",
+  "main": "production_scraper.js",
+  "scripts": {
+    "start": "node production_scraper.js",
+    "test": "node browser_scraper.js"
+  },
+  "keywords": [
+    "scraper",
+    "gaokao",
+    "xidian",
+    "admission",
+    "scores"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  }
+}
