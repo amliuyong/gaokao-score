@@ -5,6 +5,7 @@
 - 北京交通大学 (BJTU)
 - 北京邮电大学 (BUPT)
 - 北京航空航天大学 (BUAA)
+- 西安电子科技大学 (XIDIAN)
 
 ## 项目结构
 
@@ -36,6 +37,16 @@ gaokao-score/
 │   └── output/               # 爬取数据输出
 │       ├── buaa_admission_scores.json           # 全部数据
 │       └── buaa_admission_scores.json.[省份]    # 省份数据
+├── xidian/                 # 西安电子科技大学爬虫
+│   ├── browser_scraper.js    # 测试版爬虫 (仅爬取北京、上海、陕西)
+│   ├── production_scraper.js # 生产版爬虫 (爬取所有省份)
+│   ├── package.json          # 项目依赖
+│   ├── README.md             # 西安电子科技大学爬虫说明
+│   └── output/               # 爬取数据输出
+│       ├── xidian_admission_scores.json           # 全部数据
+│       ├── xidian_admission_scores.json.pretty    # 格式化的全部数据
+│       ├── xidian_admission_scores.json.[省份].[年份]    # 按省份和年份的数据
+│       └── xidian_admission_scores.json.[省份].[年份].pretty # 格式化的按省份和年份的数据
 ```
 
 ## 数据格式
