@@ -1,82 +1,91 @@
-# BNU Admission Data Parser
+# BNU Admission Data Parser (北京师范大学招生数据解析)
 
-This project extracts admission data from Beijing Normal University (BNU) PDF files and converts it to structured JSONL format.
+本项目从北京师范大学(BNU)发布的PDF格式录取数据文件中提取结构化信息，并转换为标准JSONL格式。
 
-## Project Structure
+## 项目结构
 
-- `pdfs/` - Directory containing PDF files organized by year (e.g., `pdfs/2024/陕西.pdf`)
-- `output/` - Directory for parsed JSONL output files
-- `temp_images/` - Temporary storage for PDF-to-image conversions
+- `pdfs/` - 包含按年份组织的PDF文件目录 (例如: `pdfs/2024/陕西.pdf`)
+- `output/` - 解析后的JSONL输出文件目录
+- `temp_images/` - PDF转图片临时存储目录
+- `optimized_bedrock_parser.js` - AWS Bedrock集成的高质量PDF解析器
+- `flexible_pdf_converter.js` - 灵活的PDF转图片工具
+- `manual_pdf_converter_with_prompt.js` - 带提示的手动PDF转换工具
+- `README_PDF_IMAGE_TOOLS.md` - PDF工具详细使用说明
 
-## Available Scripts
+## 可用脚本
 
-### PDF Processing Options
+### PDF处理选项
 
-The project offers multiple approaches for parsing PDF files based on your needs:
+本项目提供多种PDF文件解析方法，可根据需求选择：
 
-#### Option 1: AWS Bedrock Integration (Automated)
+#### 选项1：AWS Bedrock集成（自动化）
 
-Uses AWS Bedrock with Claude 3.5 Sonnet for high-quality extraction:
+使用AWS Bedrock与Claude 3.5 Sonnet模型实现高质量表格提取：
 
 ```bash
-node pdf_bedrock_parser.js
+node optimized_bedrock_parser.js
 ```
 
-**Prerequisites:**
-- AWS account with Bedrock access
-- AWS credentials configured
-- Required npm packages: `fs-extra`, `@aws-sdk/client-s3`, `@aws-sdk/client-bedrock-runtime`, `sharp`
+**前提条件：**
+- 拥有AWS账号并开通Bedrock访问权限
+- 已配置AWS凭证
+- 安装所需npm包: `fs-extra`, `@aws-sdk/client-s3`, `@aws-sdk/client-bedrock-runtime`, `sharp`
 
-#### Option 2: Manual PDF-to-Image Conversion
+#### 选项2：手动PDF转图片
 
-Converts PDFs to images for manual upload to Claude or other LLMs:
+将PDF转换为图片，以便手动上传到Claude或其他LLM：
 
 ```bash
-node pdf_to_image_converter.js
+node flexible_pdf_converter.js
+# 或
+node manual_pdf_converter_with_prompt.js
 ```
 
-**Prerequisites:**
-- ImageMagick or Poppler utils installed
-- Required npm packages: `fs-extra`, `sharp`
+**前提条件：**
+- 安装ImageMagick或Poppler工具
+- 安装所需npm包: `fs-extra`, `sharp`
 
-After running this script:
-1. Upload the generated images to Claude/other LLM
-2. Use the provided prompt to extract data
-3. Save the LLM's response to `claude_response.txt`
-4. Run the converter: `node claude_json_to_jsonl.js`
+运行脚本后的步骤：
+1. 将生成的图片上传到Claude/其他LLM
+2. 使用提供的提示词提取数据
+3. 将LLM的响应保存为`claude_response.txt`
+4. 运行转换器：`node claude_json_to_jsonl.js`（需自行创建）
 
-#### Option 3: Bulk PDF Processing
+#### 选项3：批量PDF处理
 
-Process all PDF files across multiple years:
+处理多年份的所有PDF文件：
 
 ```bash
-node parse_all_pdfs.js
+# 使用setup.sh设置环境并安装依赖
+./setup.sh
+
+# 运行批量处理
+node optimized_bedrock_parser.js --all-years
 ```
 
-**Note**: This provides basic text extraction and may not capture all table data accurately. For best results, use Options 1 or 2.
+**注意**：为获得最佳结果，建议使用选项1或选项2。
 
-### Utility Scripts
-
-- `claude_json_to_jsonl.js` - Converts Claude's JSON output to properly formatted JSONL
-
-## Installation
+## 安装
 
 ```bash
-# Install dependencies
+# 安装依赖
 npm install fs-extra @aws-sdk/client-s3 @aws-sdk/client-bedrock-runtime sharp pdf-lib
 
-# For PDF-to-image conversion, install one of these:
+# 为PDF转图像安装以下工具之一：
 # macOS:
 brew install imagemagick ghostscript
 # Ubuntu/Debian:
 sudo apt-get install imagemagick ghostscript
-# or
+# 或
 sudo apt-get install poppler-utils
+
+# 或使用自动化脚本安装所有依赖
+./setup.sh
 ```
 
-## Output Format
+## 输出格式
 
-The JSONL output follows this schema:
+JSONL输出遵循以下架构：
 
 ```json
 {
@@ -97,24 +106,25 @@ The JSONL output follows this schema:
 }
 ```
 
-## Troubleshooting
+## 常见问题解决
 
-### PDF Conversion Issues
+### PDF转换问题
 
-If PDF-to-image conversion fails with ImageMagick:
-1. Ensure ImageMagick is properly installed
-2. Check PDF file integrity
-3. The script will automatically try to fall back to `pdftoppm` (from Poppler utils)
+如果使用ImageMagick进行PDF-to-image转换失败：
+1. 确保正确安装了ImageMagick
+2. 检查PDF文件完整性
+3. 脚本会自动尝试回退到使用`pdftoppm`（来自Poppler工具）
 
-### AWS Bedrock Access
+### AWS Bedrock访问问题
 
-If experiencing AWS Bedrock issues:
-1. Verify AWS credentials are correctly configured
-2. Ensure your AWS region has Claude 3.5 Sonnet available
-3. Check your account has access permissions for Bedrock and the specific model
+如果遇到AWS Bedrock问题：
+1. 验证AWS凭证是否正确配置
+2. 确保您使用的AWS区域支持Claude 3.5 Sonnet
+3. 检查您的账户是否拥有Bedrock和特定模型的访问权限
 
-### Text Extraction Quality
+### 文本提取质量问题
 
-If text extraction quality is poor:
-1. Try the AWS Bedrock approach for complex tables
-2. For manual processing, increase the image DPI in `pdf_to_image_converter.js`
+如果文本提取质量不佳：
+1. 对于复杂表格，尝试使用AWS Bedrock方法
+2. 对于手动处理，在`flexible_pdf_converter.js`中增加图像DPI值
+3. 参考`README_PDF_IMAGE_TOOLS.md`了解更多优化建议

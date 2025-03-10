@@ -49,14 +49,16 @@ gaokao-score/
 │       ├── xidian_admission_scores.[省份].[年份]    # 按省份和年份的数据
 │       └── xidian_admission_scores.[省份].[年份].pretty # 格式化的按省份和年份的数据
 ├── bnu/                  # 北京师范大学爬虫
-│   ├── main_scraper.js       # 主爬虫程序，协调下载和解析
-│   ├── pdf_downloader.js     # PDF文件下载模块
-│   ├── pdf_parser.js         # PDF解析模块（使用PDF.js-extract）
-│   ├── package.json          # 项目依赖
-│   ├── README.md             # 北京师范大学爬虫说明
-│   ├── downloads/            # 下载的PDF文件目录
-│   ├── screenshots/          # 调试截图和中间文件
-│   └── output/               # 爬取数据输出
+│   ├── optimized_bedrock_parser.js # AWS Bedrock集成，用于PDF解析
+│   ├── flexible_pdf_converter.js   # PDF转图片工具
+│   ├── manual_pdf_converter_with_prompt.js # 手动PDF转换工具
+│   ├── setup.sh               # 环境设置脚本
+│   ├── package.json           # 项目依赖
+│   ├── README.md              # 北京师范大学爬虫说明
+│   ├── README_PDF_IMAGE_TOOLS.md # PDF工具详细说明
+│   ├── pdfs/                  # 按年份组织的PDF文件目录
+│   ├── temp_images/           # PDF转图片临时存储
+│   └── output/                # 爬取数据输出
 │       ├── bnu_admission_scores.json           # 全部数据
 │       ├── bnu_admission_scores.json.pretty    # 格式化的全部数据
 │       ├── bnu_admission_scores.[省份].json    # 省份数据
@@ -112,14 +114,19 @@ node main_scraper.js
 
 ## 特别说明 - BNU (北京师范大学)
 
-北京师范大学的录取数据以PDF文件形式发布，因此北师大爬虫采用了不同的技术路线：
+北京师范大学的录取数据以PDF文件形式发布，因此北师大爬虫采用了不同的技术路线，提供多种解析选项：
 
-1. 首先使用puppeteer下载各省录取分数PDF文件
-2. 然后使用pdf.js-extract解析PDF文件中的表格数据
-3. 通过坐标分析和内容识别提取有效数据
-4. 最后处理并输出标准格式的JSON数据
+1. **AWS Bedrock集成**：使用AWS Bedrock与Claude 3.5 Sonnet模型实现高质量PDF表格数据提取
+2. **手动PDF转图片**：将PDF转换为图片以便上传到Claude或其他LLM进行解析
+3. **批量PDF处理**：处理多年份、多省份的PDF文件
 
-请参考[BNU爬虫文档](./bnu/README.md)了解详细使用方法。
+PDF处理流程：
+1. 获取各省录取分数PDF文件（按年份组织）
+2. 使用选定的方法解析PDF中的表格数据
+3. 通过内容识别提取有效数据
+4. 处理并输出标准格式的JSONL数据
+
+请参考[BNU爬虫文档](./bnu/README.md)了解详细使用方法和各选项的优缺点。
 
 ## 许可证
 
