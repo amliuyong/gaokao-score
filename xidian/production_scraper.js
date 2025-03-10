@@ -8,8 +8,11 @@ const OUTPUT_FILE = 'xidian_admission_scores.json';
 // Define years to scrape
 const YEARS = ['2024', '2023', '2022', '2021'];
 
-// Sleep function to avoid overwhelming the server
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Sleep function to avoid overwhelming the server with configurable jitter for more natural timing
+const sleep = (ms) => {
+  const jitter = Math.floor(Math.random() * 2000); // Add up to 2 seconds of random jitter
+  return new Promise(resolve => setTimeout(resolve, ms + jitter));
+};
 
 async function scrapeAdmissionScores() {
   console.log('Starting production scraper for XIDIAN...');
@@ -19,7 +22,7 @@ async function scrapeAdmissionScores() {
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process'],
-    timeout: 60000
+    timeout: 90000  // Increased timeout to 90 seconds
   });
   console.log('Browser launched successfully');
   
@@ -33,6 +36,10 @@ async function scrapeAdmissionScores() {
     
     // Set viewport to a reasonable size
     await page.setViewport({ width: 1366, height: 768 });
+    
+    // Set longer navigation timeouts
+    page.setDefaultNavigationTimeout(60000);
+    page.setDefaultTimeout(60000);
     
     // Navigate directly to the historical scores page
     const SCORES_URL = 'https://zsxc.xidian.edu.cn/auth/zsdata/lqxx/#/lnfs';
@@ -134,43 +141,66 @@ async function scrapeAdmissionScores() {
     
     // Try to get data for all provinces
     for (const province of provinces) {
+      // Skip problematic provinces for now
+      if (['青海', '宁夏', '新疆'].includes(province)) {
+        console.log(`Skipping potentially problematic province: ${province}`);
+        continue;
+      }
+      
       console.log(`Attempting to get data for province: ${province}`);
       
-      // Try to find and click on the province
-      const found = await page.evaluate((provinceName) => {
-        // Try various methods to find province elements
-        
-        // Method 1: Look for links or buttons with province text
-        const links = Array.from(document.querySelectorAll('a, button'));
-        const provinceLink = links.find(el => el.textContent.trim() === provinceName);
-        if (provinceLink) {
-          provinceLink.click();
-          return true;
-        }
-        
-        // Method 2: Look for province text in any element and click it
-        const elements = Array.from(document.querySelectorAll('*'));
-        for (const el of elements) {
-          if (el.childNodes.length < 5 && el.textContent.trim() === provinceName) {
-            el.click();
-            return true;
+      // Try to find and click on the province with retry
+      let found = false;
+      let retries = 0;
+      
+      while (!found && retries < 3) {
+        try {
+          found = await page.evaluate((provinceName) => {
+            // Try various methods to find province elements
+            
+            // Method 1: Look for links or buttons with province text
+            const links = Array.from(document.querySelectorAll('a, button'));
+            const provinceLink = links.find(el => el.textContent.trim() === provinceName);
+            if (provinceLink) {
+              provinceLink.click();
+              return true;
+            }
+            
+            // Method 2: Look for province text in any element and click it
+            const elements = Array.from(document.querySelectorAll('*'));
+            for (const el of elements) {
+              if (el.childNodes.length < 5 && el.textContent.trim() === provinceName) {
+                el.click();
+                return true;
+              }
+            }
+            
+            // Method 3: Try to find a select element and select the province
+            const selects = Array.from(document.querySelectorAll('select'));
+            for (const select of selects) {
+              const option = Array.from(select.options).find(opt => opt.textContent.trim() === provinceName);
+              if (option) {
+                select.value = option.value;
+                const event = new Event('change', { bubbles: true });
+                select.dispatchEvent(event);
+                return true;
+              }
+            }
+            
+            return false;
+          }, province);
+          
+          if (!found) {
+            retries++;
+            console.log(`Retry ${retries} for province: ${province}...`);
+            await sleep(2000);
           }
+        } catch (error) {
+          console.error(`Error clicking province ${province}:`, error);
+          retries++;
+          await sleep(2000);
         }
-        
-        // Method 3: Try to find a select element and select the province
-        const selects = Array.from(document.querySelectorAll('select'));
-        for (const select of selects) {
-          const option = Array.from(select.options).find(opt => opt.textContent.trim() === provinceName);
-          if (option) {
-            select.value = option.value;
-            const event = new Event('change', { bubbles: true });
-            select.dispatchEvent(event);
-            return true;
-          }
-        }
-        
-        return false;
-      }, province);
+      }
       
       if (found) {
         console.log(`Selected province: ${province}`);
@@ -183,58 +213,75 @@ async function scrapeAdmissionScores() {
         for (const year of YEARS) {
           console.log(`Attempting to get data for year: ${year}`);
           
-          // Try to find and click on the year
-          const yearFound = await page.evaluate((yearValue) => {
+          // Try to find and click on the year with retries
+          let yearFound = false;
+          let yearRetries = 0;
+          
+          while (!yearFound && yearRetries < 3) {
             try {
-              // Look for year selector or dropdown
-              const yearSelects = Array.from(document.querySelectorAll('select'));
-              for (const select of yearSelects) {
-                // Check if this select has year options
-                const hasYearOption = Array.from(select.options).some(opt => 
-                  opt.textContent.includes(yearValue) || opt.value.includes(yearValue)
-                );
-                
-                if (hasYearOption) {
-                  // Find and select the year option
-                  const yearOption = Array.from(select.options).find(opt => 
-                    opt.textContent.includes(yearValue) || opt.value.includes(yearValue)
-                  );
+              yearFound = await page.evaluate((yearValue) => {
+                try {
+                  // Look for year selector or dropdown
+                  const yearSelects = Array.from(document.querySelectorAll('select'));
+                  for (const select of yearSelects) {
+                    // Check if this select has year options
+                    const hasYearOption = Array.from(select.options).some(opt => 
+                      opt.textContent.includes(yearValue) || opt.value.includes(yearValue)
+                    );
+                    
+                    if (hasYearOption) {
+                      // Find and select the year option
+                      const yearOption = Array.from(select.options).find(opt => 
+                        opt.textContent.includes(yearValue) || opt.value.includes(yearValue)
+                      );
+                      
+                      if (yearOption) {
+                        select.value = yearOption.value;
+                        const event = new Event('change', { bubbles: true });
+                        select.dispatchEvent(event);
+                        return true;
+                      }
+                    }
+                  }
                   
-                  if (yearOption) {
-                    select.value = yearOption.value;
-                    const event = new Event('change', { bubbles: true });
-                    select.dispatchEvent(event);
+                  // If no select found, look for year buttons or links
+                  const links = Array.from(document.querySelectorAll('a, button, span, div'));
+                  const yearLink = links.find(el => el.textContent.trim() === yearValue);
+                  if (yearLink) {
+                    yearLink.click();
                     return true;
                   }
+                  
+                  // If no explicit year selection found, check if we're already on the year we want
+                  // (this is the case if the website defaults to the most recent year)
+                  const pageText = document.body.textContent;
+                  if (pageText.includes(yearValue)) {
+                    console.log(`Page already has data for year ${yearValue}`);
+                    return true;
+                  }
+                  
+                  return false;
+                } catch (e) {
+                  console.error('Error selecting year:', e);
+                  return false;
                 }
-              }
+              }, year);
               
-              // If no select found, look for year buttons or links
-              const links = Array.from(document.querySelectorAll('a, button, span, div'));
-              const yearLink = links.find(el => el.textContent.trim() === yearValue);
-              if (yearLink) {
-                yearLink.click();
-                return true;
+              if (!yearFound) {
+                yearRetries++;
+                console.log(`Retry ${yearRetries} for year: ${year}...`);
+                await sleep(2000);
               }
-              
-              // If no explicit year selection found, check if we're already on the year we want
-              // (this is the case if the website defaults to the most recent year)
-              const pageText = document.body.textContent;
-              if (pageText.includes(yearValue)) {
-                console.log(`Page already has data for year ${yearValue}`);
-                return true;
-              }
-              
-              return false;
-            } catch (e) {
-              console.error('Error selecting year:', e);
-              return false;
+            } catch (error) {
+              console.error(`Error selecting year ${year}:`, error);
+              yearRetries++;
+              await sleep(2000); 
             }
-          }, year);
+          }
           
           if (yearFound) {
             console.log(`Selected or confirmed year: ${year}`);
-            await sleep(2000);
+            await sleep(3000); // Increased wait time after year selection
             
             // Now try to extract the data from the page
             const results = await extractDataFromPage(page, province, year);
@@ -250,13 +297,17 @@ async function scrapeAdmissionScores() {
           } else {
             console.log(`Could not find/select year: ${year} for province ${province}`);
           }
+          
+          // Add a delay between years
+          await sleep(3000);
         }
       } else {
         console.log(`Could not find/select province: ${province}`);
       }
       
-      // Add a delay between provinces to avoid rate limiting
-      await sleep(5000);
+      // Add a longer delay between provinces to avoid rate limiting
+      console.log(`Waiting between province requests...`);
+      await sleep(8000);
     }
     
     // Save all results if any data was collected
@@ -280,8 +331,20 @@ async function extractDataFromPage(page, province, year) {
   console.log(`Extracting data for province ${province}...`);
   
   try {
-    // Wait for any data table to appear
-    await page.waitForSelector('table', { timeout: 15000 });
+    // Wait for any data table to appear with increased timeout and retry mechanism
+    try {
+      await page.waitForSelector('table', { timeout: 30000 });
+    } catch (error) {
+      console.log(`Timeout waiting for table in province ${province}, year ${year}. Retrying...`);
+      // Reload page and try again
+      await page.reload({ waitUntil: 'networkidle2', timeout: 30000 });
+      try {
+        await page.waitForSelector('table', { timeout: 30000 });
+      } catch (retryError) {
+        console.error(`Failed to find table after retry for province ${province}, year ${year}:`, retryError);
+        return [];
+      }
+    }
     
     // Take a screenshot of the table
     await page.screenshot({ path: `table_${province}.png` });
